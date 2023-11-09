@@ -1,0 +1,4 @@
+plugins {
+    id 'io.nextflow.groovy-common-conventions'
+    id 'application'
+}
