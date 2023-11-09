@@ -1,0 +1,42 @@
+name: CI
+
+on: [push]
+
+jobs:
+  test:
+    name: Build and test the plugin
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        JAVA_VERSION: [8, 11, 17, 21]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+
+      - name: Setup Java ${{ matrix.JAVA_VERSION }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{matrix.JAVA_VERSION}}
+          architecture: x64
+          distribution: adopt
+
+      - name: Compile
+        run: |
+          make clean
+          make check
+          make compile
+          make compile-with-nextflow
+
+      - name: Build
+        run: make build
+
+      - name: Install
+        run: make install-local
+
+      - name: Test
+        run: make test
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
