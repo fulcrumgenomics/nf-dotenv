@@ -37,15 +37,15 @@ class MockScriptRunner extends ScriptRunner {
     // /** An in-memory filesystem for unit testing. */
     // static private FileSystem fs = Jimfs.newFileSystem(Configuration.unix())
     //
-    // static private Path tmpDir = {
+    // private Path tmpDir = {
     //     Path tmp = fs.getPath('/tmp')
     //     tmp.mkdir()
     //     Path test = Files.createTempDirectory(tmp, 'test')
     //     test
-    //  }()
+    // }
 
     /** Return a random temporary directory for testing. */
-    static private Path tmpDir = {
+    private Path tmpDir = {
         Path tmp = Path.of(System.getProperty('java.io.tmpdir'))
         tmp.mkdir()
         Path test = Files.createTempDirectory(tmp, 'test')
@@ -58,13 +58,13 @@ class MockScriptRunner extends ScriptRunner {
       * @param content The content of the temporary file, if any.
       * @param relative The relative modifier to the temporary file e.g. 'child-folder/'
       */
-    static private Path createInMemTempFile(String name, String content=null, String relative=null) {
+    private Path createInMemTempFile(String name, String content=null, String relative=null) {
         Path result
         if (relative) {
-            tmpDir.resolve(relative).mkdir()
-            result = tmpDir.resolve(relative).resolve(name)
+            this.tmpDir.resolve(relative).mkdir()
+            result = this.tmpDir.resolve(relative).resolve(name)
         } else {
-            result = tmpDir.resolve(name)
+            result = this.tmpDir.resolve(name)
         }
         if (content) {
             result.text = content
@@ -79,17 +79,16 @@ class MockScriptRunner extends ScriptRunner {
     }
 
     /** Set the script `main.nf` with specific contents. */
-    MockScriptRunner setScript(String str) {
-        Path script = createInMemTempFile('main.nf', str)
+    MockScriptRunner setScript(String content) {
+        Path script = createInMemTempFile('main.nf', content)
         setScript(script)
         return this
     }
 
     /** Set the configuration file `.env` with specific contents. */
-    MockScriptRunner setDotenv(String str, String filename=DotenvExtension.DEFAULT_FILENAME, String relative=null) {
-        createInMemTempFile(filename, str, relative)
+    MockScriptRunner setDotenv(String content, String filename=DotenvExtension.DEFAULT_FILENAME, String relative=null) {
+        createInMemTempFile(filename, content, relative)
         return this
-
     }
 
     /** Normalize the output of the script result so it is easier to compare. */

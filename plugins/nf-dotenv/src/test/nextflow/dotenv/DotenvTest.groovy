@@ -57,19 +57,20 @@ class DotenvTest extends Dsl2Spec{
             result.val == Channel.STOP
     }
 
-    def 'should import the plugin and raise an exception if a dotenv is not found' () {
+    def 'should import the plugin and not raise an exception if a dotenv is not found but unused' () {
         when:
             String SCRIPT = '''
                 include { dotenv } from 'plugin/nf-dotenv'
                 channel.of('hi-mom')
             '''
         and:
-            new MockScriptRunner([:]).setScript(SCRIPT).execute()
+            def result = new MockScriptRunner([:]).setScript(SCRIPT).execute()
         then:
-            thrown DotenvException
+            result.val == 'hi-mom'
+            result.val == Channel.STOP
     }
 
-    def 'should import the plugin and raise no exceptions the dotenv is found' () {
+    def 'should import the plugin and raise no exceptions when the dotenv is found' () {
         when:
             String SCRIPT = '''
                 include { dotenv } from 'plugin/nf-dotenv'
@@ -85,7 +86,7 @@ class DotenvTest extends Dsl2Spec{
             result.val == Channel.STOP
     }
 
-    def 'should import the plugin and return an empty value for a key that does not exist' () {
+    def 'should import the plugin and by default throw an exception for a key that does not exist' () {
         when:
             String SCRIPT = '''
                 include { dotenv } from 'plugin/nf-dotenv'
@@ -95,14 +96,12 @@ class DotenvTest extends Dsl2Spec{
                 FOO=bar
             '''
         and:
-            def result = new MockScriptRunner([:]).setScript(SCRIPT).setDotenv(DOTENV).execute()
+            new MockScriptRunner([:]).setScript(SCRIPT).setDotenv(DOTENV).execute()
         then:
-            result.val == ''
-            result.val == Channel.STOP
+            thrown DotenvException
     }
 
-
-    def 'should import the plugin and return a the correct value for a key that does exist' () {
+    def 'should import the plugin and return the correct value for a key that does exist' () {
         when:
             String SCRIPT = '''
                 include { dotenv } from 'plugin/nf-dotenv'
@@ -119,7 +118,7 @@ class DotenvTest extends Dsl2Spec{
     }
 
 
-    def 'should import the plugin and allow for an override of the dotenv filename relative to the main script' () {
+    def 'should import the plugin and allow for an override of the dotenv filename' () {
         when:
             String SCRIPT = '''
                 include { dotenv } from 'plugin/nf-dotenv'
@@ -128,14 +127,12 @@ class DotenvTest extends Dsl2Spec{
             String DOTENV = '''
                 FOO=bar
             '''
-        and:
-            def result = new MockScriptRunner(['dotenv.filename': '.envrc'])
+            new MockScriptRunner(['dotenv': ['filename': '.envrc']])
                 .setScript(SCRIPT)
-                .setDotenv(DOTENV, '.envrc')
+                .setDotenv(DOTENV,'.env')
                 .execute()
         then:
-            result.val == 'bar'
-            result.val == Channel.STOP
+            thrown DotenvException
     }
 
 
@@ -149,28 +146,9 @@ class DotenvTest extends Dsl2Spec{
                 FOO=bar
             '''
         and:
-            def result = new MockScriptRunner(['dotenv.relative': 'test'])
+            def result = new MockScriptRunner(['dotenv': ['relative': 'test']])
                 .setScript(SCRIPT)
                 .setDotenv(DOTENV, DotenvExtension.DEFAULT_FILENAME, 'test')
-                .execute()
-        then:
-            result.val == 'bar'
-            result.val == Channel.STOP
-    }
-
-    def 'should import the plugin and allow for an override of the dotenv directory as a parent directory to the main script' () {
-        when:
-            String SCRIPT = '''
-                include { dotenv } from 'plugin/nf-dotenv'
-                channel.of(dotenv('FOO'))
-            '''
-            String DOTENV = '''
-                FOO=bar
-            '''
-        and:
-            def result = new MockScriptRunner(['dotenv.relative': '../other'])
-                .setScript(SCRIPT)
-                .setDotenv(DOTENV, DotenvExtension.DEFAULT_FILENAME, '../other')
                 .execute()
         then:
             result.val == 'bar'
@@ -187,7 +165,7 @@ class DotenvTest extends Dsl2Spec{
                 FOO=bar
             '''
         and:
-            def result = new MockScriptRunner(['dotenv.relative': '.'])
+            def result = new MockScriptRunner(['dotenv': ['relative': '.']])
                 .setScript(SCRIPT)
                 .setDotenv(DOTENV, DotenvExtension.DEFAULT_FILENAME, '.')
                 .execute()
@@ -196,6 +174,21 @@ class DotenvTest extends Dsl2Spec{
             result.val == Channel.STOP
     }
 
-    // TODO: Need a test that tests for default value return from config
-    // TODO: Need a test for environment variable override
+    def 'should import the plugin and raise an exception if the override dotenv directory is incorrect' () {
+        when:
+            String SCRIPT = '''
+                include { dotenv } from 'plugin/nf-dotenv'
+                channel.of(dotenv('FOO'))
+            '''
+            String DOTENV = '''
+                FOO=bar
+            '''
+        and:
+            new MockScriptRunner(['dotenv': ['relative': 'other/']])
+                .setScript(SCRIPT)
+                .setDotenv(DOTENV, DotenvExtension.DEFAULT_FILENAME)
+                .execute()
+        then:
+            thrown DotenvException
+    }
 }
