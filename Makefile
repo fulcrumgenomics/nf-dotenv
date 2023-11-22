@@ -1,8 +1,7 @@
 version ?= $(shell grep 'Plugin-Version' plugins/nf-dotenv/src/resources/META-INF/MANIFEST.MF | awk '{ print $$2 }')
 
-.PHONY: check
-check:
-	./gradlew check --warning-mode all
+.PHONY: all
+all: compile build
 
 .PHONY: clean
 clean:
