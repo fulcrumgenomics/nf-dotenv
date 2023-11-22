@@ -26,17 +26,16 @@ jobs:
       - name: Compile
         run: |
           make clean
-          make check
           make compile
           make compile-with-nextflow
+
+      - name: Test
+        run: make test
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 
       - name: Build
         run: make build
 
       - name: Install
         run: make install-local
-
-      - name: Test
-        run: make test
-        env:
-          GRADLE_OPTS: '-Dorg.gradle.daemon=false'

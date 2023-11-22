@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import io.nextflow.gradle.tasks.GithubRepositoryPublisher
 import io.nextflow.gradle.tasks.GithubUploader
 import org.apache.commons.codec.digest.DigestUtils
@@ -22,6 +21,7 @@ import java.time.format.DateTimeFormatter
 
 plugins {
     id "java"
+    id "groovy"
     id "io.nextflow.nf-build-plugin" version "1.0.1"
 }
 
@@ -32,22 +32,25 @@ ext.github_commit_email = project.findProperty('github_commit_email') ?: System.
 
 jar.enabled = false
 
+/** Generate a sha512 hash of the given file. */
 static String computeSha512(File file) {
-    if (!file.exists())
+    if (!file.exists()) {
         throw new GradleException("Missing file: $file -- cannot compute SHA-512")
+    }
     return DigestUtils.sha512Hex(file.bytes)
 }
 
+/** The time is now! */
 String now() {
     "${OffsetDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}"
 }
 
+/** All the plugins we intend to compile, test, build, install, and publish. */
 List<String> allPlugins() {
-    def plugins = []
-    new File(rootProject.rootDir, 'plugins') .eachDir { if(it.name.startsWith('nf-')) plugins.add(it.name) }
-    return plugins
+    return [new File(rootProject.rootDir, 'plugins/nf-dotenv')] as List<String>
 }
 
+/** Get the metadata for this plugin from the MANIFEST file. */
 static String metaFromManifest(String meta, File file) {
     def str = file.text
     def regex = ~/(?m)^$meta:\s*([\w-\.<>=]+)$/
@@ -71,7 +74,7 @@ subprojects {
         mavenCentral()
     }
 
-    version = metaFromManifest('Plugin-Version',file('src/resources/META-INF/MANIFEST.MF'))
+    version = metaFromManifest('Plugin-Version', file('src/resources/META-INF/MANIFEST.MF'))
 
     tasks.withType(Jar).configureEach {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
@@ -97,7 +100,7 @@ subprojects {
                 "requires": "${metaFromManifest('Plugin-Requires', file('src/resources/META-INF/MANIFEST.MF'))}",
                 "sha512sum": "${computeSha512(zip)}"
               }
-            """.stripIndent()
+            """.trim().stripIndent()
             file("$buildDir/tmp/makeZip").deleteDir()
         }
         outputs.file("$buildDir/libs/${project.name}-${project.version}.zip")
@@ -107,18 +110,19 @@ subprojects {
     tasks.register('copyPluginLibs', Sync) {
         from configurations.runtimeClasspath
         into 'build/target/libs'
+        duplicatesStrategy 'exclude'
     }
 
     /** Copy the plugin into the project root build/plugins directory. */
     tasks.register('copyPluginZip', Copy) {
-        dependsOn project.tasks.findByName('makeZip')
+        dependsOn makeZip
         from makeZip
         into "$rootProject.buildDir/plugins"
         outputs.file("$rootProject.buildDir/plugins/${project.name}-${project.version}.zip")
         doLast {
             ant.unzip(
-                    src: "$rootProject.buildDir/plugins/${project.name}-${project.version}.zip",
-                    dest: "$rootProject.buildDir/plugins/${project.name}-${project.version}"
+                src: "$rootProject.buildDir/plugins/${project.name}-${project.version}.zip",
+                dest: "$rootProject.buildDir/plugins/${project.name}-${project.version}"
             )
         }
     }
@@ -129,8 +133,10 @@ subprojects {
     tasks.register('uploadPlugin', GithubUploader) {
         dependsOn makeZip
         assets = providers.provider {
-            ["$buildDir/libs/${project.name}-${project.version}.zip",
-             "$buildDir/libs/${project.name}-${project.version}-meta.json"]
+            [
+                "$buildDir/libs/${project.name}-${project.version}.zip",
+                "$buildDir/libs/${project.name}-${project.version}-meta.json"
+            ]
         }
         release = providers.provider { project.version }
         repo = providers.provider { project.name }
@@ -139,19 +145,6 @@ subprojects {
         authToken = github_access_token
         skipExisting = true
     }
-
-    jar {
-        from sourceSets.main.allSource
-        doLast {
-            file("$buildDir/tmp/jar").deleteDir()
-        }
-    }
-
-    tasks.withType(GenerateModuleMetadata).configureEach {
-        enabled = false
-    }
-
-    task upload(dependsOn: [uploadPlugin] ) { }
 }
 
 /** Upload all plugins to the corresponding GitHub repos. */
