@@ -99,21 +99,21 @@ After building the Docker image with `docker compose build`, and after [enabling
 When the main Nextflow script is run with `nextflow run main.nf`, you will get the following output:
 
 ```console
-❯ nextflow --quiet run main.nf
+❯ nextflow -quiet run main.nf
 samtools 1.17
 ```
 
 However, upgrade the dotenv variable `SAMTOOLS_VERSION` to `1.18` and you'll see:
 
 ```console
-❯ nextflow --quiet run main.nf
+❯ nextflow -quiet run main.nf
 samtools 1.18
 ```
 
 Conveniently for debugging, local environment variables take precedence over dotenv variables:
 
 ```console
-❯ SAMTOOLS_VERSION=1.16 nextflow --quiet run main.nf
+❯ SAMTOOLS_VERSION=1.16 nextflow -quiet run main.nf
 samtools 1.16
 ```
 
