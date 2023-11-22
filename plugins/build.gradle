@@ -100,7 +100,7 @@ subprojects {
                 "requires": "${metaFromManifest('Plugin-Requires', file('src/resources/META-INF/MANIFEST.MF'))}",
                 "sha512sum": "${computeSha512(zip)}"
               }
-            """.trim().stripIndent()
+            """.stripIndent().trim()
             file("$buildDir/tmp/makeZip").deleteDir()
         }
         outputs.file("$buildDir/libs/${project.name}-${project.version}.zip")
