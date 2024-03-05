@@ -1,8 +1,8 @@
 # nf-dotenv
 
 [![CI](https://github.com/fulcrumgenomics/nf-dotenv/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/fulcrumgenomics/nf-dotenv/actions/workflows/test.yml?query=branch%3Amain)
-[![Nextflow](https://img.shields.io/badge/Nextflow%20DSL2-%E2%89%A522.10.2-blue.svg)](https://www.nextflow.io/)
-[![Java Versions](https://img.shields.io/badge/java-8_|_11_|_17_|_21-blue)](https://github.com/fulcrumgenomics/nf-dotenv)
+[![Nextflow](https://img.shields.io/badge/Nextflow%20DSL2-%E2%89%A524.01.0%E2%80%93edge-blue.svg)](https://www.nextflow.io/)
+[![Java Versions](https://img.shields.io/badge/java-11_|_17_|_21-blue)](https://github.com/fulcrumgenomics/nf-dotenv)
 
 Automatically source [dotenv](https://hexdocs.pm/dotenvy/dotenv-file-format.html) files into your Nextflow scope.
 

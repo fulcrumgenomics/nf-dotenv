@@ -10,7 +10,9 @@ import org.pf4j.PluginDescriptorFinder
 import spock.lang.Shared
 import test.Dsl2Spec
 
+import java.nio.file.Files
 import java.nio.file.Path
+import java.util.jar.Manifest
 
 /** Unit tests for the nf-dotenv plugin that use virtual file systems and mocking to run. */
 class DotenvTest extends Dsl2Spec{
@@ -28,9 +30,12 @@ class DotenvTest extends Dsl2Spec{
             @Override
             protected PluginDescriptorFinder createPluginDescriptorFinder() {
                 return new TestPluginDescriptorFinder() {
-                    @Override
-                    protected Path getManifestPath(Path pluginPath) {
-                        return pluginPath.resolve('build/resources/main/META-INF/MANIFEST.MF')
+                    protected Manifest readManifestFromDirectory(Path pluginPath) {
+                        if (!Files.isDirectory(pluginPath)) return null
+                        final manifestPath = pluginPath.resolve('build/resources/main/META-INF/MANIFEST.MF')
+                        if (!Files.exists(manifestPath)) return null
+                        final contents = Files.newInputStream(manifestPath)
+                        return new Manifest(contents)
                     }
                 }
             }
