@@ -5,7 +5,7 @@ on: [push]
 jobs:
   test:
     name: Build and test the plugin
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
