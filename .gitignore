@@ -3,5 +3,6 @@
 .idea
 .nextflow*
 build/
+lib/
 out/
 work/
