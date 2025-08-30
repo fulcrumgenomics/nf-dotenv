@@ -191,4 +191,21 @@ class DotenvTest extends Dsl2Spec{
         then:
             thrown DotenvException
     }
+
+    def 'should allow for duplicate variables in the dotenv file, preferring the last one defined' () {
+        when:
+            String SCRIPT = '''
+                include { dotenv } from 'plugin/nf-dotenv'
+                channel.of(dotenv('FOO'))
+            '''
+            String DOTENV = '''
+                FOO=bar1
+                FOO=bar2
+            '''
+        and:
+            def result = new MockScriptRunner([:]).setScript(SCRIPT).setDotenv(DOTENV).execute()
+        then:
+            result.val == 'bar2'
+            result.val == Channel.STOP
+    }
 }
