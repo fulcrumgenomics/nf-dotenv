@@ -41,12 +41,13 @@ class DotenvExtension extends PluginExtensionPoint {
                 .filename(this.filename)
                 .directory(this.directory.toString())
                 .load()
-        } catch (DotenvException) {
+        } catch (DotenvException originalException) {
             throw new DotenvException(
                 "Could not find dotenv file at path ${this.directory}/${this.filename}\n\n" +
                 "Consider modifying the following properties in your Nextflow config:\n\n" +
                 "\tdotenv.filename = '${DEFAULT_FILENAME}'\n" +
-                "\tdotenv.relative = '.'\n\n"
+                "\tdotenv.relative = '.'\n\n" +
+                "Original `dotenv` parsing error: ${originalException.message}"
             )
         }
     }()
