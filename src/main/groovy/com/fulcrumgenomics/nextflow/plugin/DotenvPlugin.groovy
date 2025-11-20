@@ -1,4 +1,4 @@
-package nextflow.dotenv
+package com.fulcrumgenomics.nextflow.plugin
 
 import groovy.transform.CompileStatic
 import nextflow.plugin.BasePlugin

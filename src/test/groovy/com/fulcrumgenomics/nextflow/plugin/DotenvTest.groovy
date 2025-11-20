@@ -1,4 +1,4 @@
-package nextflow.dotenv
+package com.fulcrumgenomics.nextflow.plugin
 
 import io.github.cdimascio.dotenv.DotenvException
 import nextflow.Channel
@@ -10,35 +10,53 @@ import org.pf4j.PluginDescriptorFinder
 import spock.lang.Shared
 import test.Dsl2Spec
 
+import java.nio.file.Files
 import java.nio.file.Path
+import java.util.jar.Manifest
 
 /** Unit tests for the nf-dotenv plugin that use virtual file systems and mocking to run. */
-class DotenvTest extends Dsl2Spec{
+class DotenvTest extends Dsl2Spec {
 
-    /** Share the plugin mode across all features in this specification. */
+    /** The plugin mode for all running plugins during test time. */
     @Shared String pluginsMode
 
-    /** Setup the test class by loading all plugins. */
+    /** The root directory for the plugin. */
+    Path root = Path.of('.').toAbsolutePath().normalize()
+    Path getRoot() { this.root }
+    String getRootString() { this.root.toString() }
+
+    /** Setup the plugin manager and load the dotenv plugin. */
     def setup() {
         PluginExtensionProvider.reset()
+
         pluginsMode = System.getProperty('pf4j.mode')
         System.setProperty('pf4j.mode', 'dev')
-        Path root = Path.of('.').toAbsolutePath().normalize()
+
+        def root = this.getRoot()
+
         def manager = new TestPluginManager(root) {
             @Override
             protected PluginDescriptorFinder createPluginDescriptorFinder() {
                 return new TestPluginDescriptorFinder() {
                     @Override
+                    protected Manifest readManifestFromDirectory(Path pluginPath) {
+                        def manifestPath = getManifestPath(pluginPath)
+                        final input = Files.newInputStream(manifestPath)
+                        return new Manifest(input)
+                    }
                     protected Path getManifestPath(Path pluginPath) {
-                        return pluginPath.resolve('build/resources/main/META-INF/MANIFEST.MF')
+                        return pluginPath.resolve('build/tmp/jar/MANIFEST.MF')
                     }
                 }
             }
         }
+
         Plugins.init(root, 'dev', manager)
+        manager.loadPlugins()
+        manager.startPlugins()
     }
 
-    /** Cleanup the test class by unloading and resetting all plugins. */
+    /** Cleanup after tests have run. */
     def cleanup() {
         Plugins.stop()
         PluginExtensionProvider.reset()
@@ -51,7 +69,7 @@ class DotenvTest extends Dsl2Spec{
                 channel.of('hi-mom')
             '''
         and:
-            def result = new MockScriptRunner([:]).setScript(SCRIPT).execute()
+            def result = new DotenvMockScriptRunner([:]).setScript(SCRIPT).execute()
         then:
             result.val == 'hi-mom'
             result.val == Channel.STOP
@@ -64,7 +82,7 @@ class DotenvTest extends Dsl2Spec{
                 channel.of('hi-mom')
             '''
         and:
-            def result = new MockScriptRunner([:]).setScript(SCRIPT).execute()
+            def result = new DotenvMockScriptRunner([:]).setScript(SCRIPT).execute()
         then:
             result.val == 'hi-mom'
             result.val == Channel.STOP
@@ -80,7 +98,7 @@ class DotenvTest extends Dsl2Spec{
                 FOO=bar
             '''
         and:
-            def result = new MockScriptRunner([:]).setScript(SCRIPT).setDotenv(DOTENV).execute()
+            def result = new DotenvMockScriptRunner([:]).setScript(SCRIPT).setDotenv(DOTENV).execute()
         then:
             result.val == 'hi-mom'
             result.val == Channel.STOP
@@ -96,7 +114,7 @@ class DotenvTest extends Dsl2Spec{
                 FOO=bar
             '''
         and:
-            new MockScriptRunner([:]).setScript(SCRIPT).setDotenv(DOTENV).execute()
+            new DotenvMockScriptRunner([:]).setScript(SCRIPT).setDotenv(DOTENV).execute()
         then:
             thrown DotenvException
     }
@@ -111,7 +129,7 @@ class DotenvTest extends Dsl2Spec{
                 FOO=bar
             '''
         and:
-            def result = new MockScriptRunner([:]).setScript(SCRIPT).setDotenv(DOTENV).execute()
+            def result = new DotenvMockScriptRunner([:]).setScript(SCRIPT).setDotenv(DOTENV).execute()
         then:
             result.val == 'bar'
             result.val == Channel.STOP
@@ -127,7 +145,7 @@ class DotenvTest extends Dsl2Spec{
             String DOTENV = '''
                 FOO=bar
             '''
-            new MockScriptRunner(['dotenv': ['filename': '.envrc']])
+            new DotenvMockScriptRunner(['dotenv': ['filename': '.envrc']])
                 .setScript(SCRIPT)
                 .setDotenv(DOTENV,'.env')
                 .execute()
@@ -146,9 +164,9 @@ class DotenvTest extends Dsl2Spec{
                 FOO=bar
             '''
         and:
-            def result = new MockScriptRunner(['dotenv': ['relative': 'test']])
+            def result = new DotenvMockScriptRunner(['dotenv': ['relative': 'test']])
                 .setScript(SCRIPT)
-                .setDotenv(DOTENV, DotenvExtension.DEFAULT_FILENAME, 'test')
+                .setDotenv(DOTENV, com.fulcrumgenomics.nextflow.plugin.DotenvConfig.DEFAULT_FILENAME, 'test')
                 .execute()
         then:
             result.val == 'bar'
@@ -165,9 +183,9 @@ class DotenvTest extends Dsl2Spec{
                 FOO=bar
             '''
         and:
-            def result = new MockScriptRunner(['dotenv': ['relative': '.']])
+            def result = new DotenvMockScriptRunner(['dotenv': ['relative': '.']])
                 .setScript(SCRIPT)
-                .setDotenv(DOTENV, DotenvExtension.DEFAULT_FILENAME, '.')
+                .setDotenv(DOTENV, com.fulcrumgenomics.nextflow.plugin.DotenvConfig.DEFAULT_FILENAME, '.')
                 .execute()
         then:
             result.val == 'bar'
@@ -184,9 +202,9 @@ class DotenvTest extends Dsl2Spec{
                 FOO=bar
             '''
         and:
-            new MockScriptRunner(['dotenv': ['relative': 'other/']])
+            new DotenvMockScriptRunner(['dotenv': ['relative': 'other/']])
                 .setScript(SCRIPT)
-                .setDotenv(DOTENV, DotenvExtension.DEFAULT_FILENAME)
+                .setDotenv(DOTENV, com.fulcrumgenomics.nextflow.plugin.DotenvConfig.DEFAULT_FILENAME)
                 .execute()
         then:
             thrown DotenvException
@@ -203,7 +221,7 @@ class DotenvTest extends Dsl2Spec{
                 FOO=bar2
             '''
         and:
-            def result = new MockScriptRunner([:]).setScript(SCRIPT).setDotenv(DOTENV).execute()
+            def result = new DotenvMockScriptRunner([:]).setScript(SCRIPT).setDotenv(DOTENV).execute()
         then:
             result.val == 'bar2'
             result.val == Channel.STOP

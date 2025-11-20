@@ -1,4 +1,4 @@
-package nextflow.dotenv
+package com.fulcrumgenomics.nextflow.plugin
 
 import groovy.transform.CompileStatic
 import io.github.cdimascio.dotenv.Dotenv
@@ -14,11 +14,8 @@ import java.nio.file.Path
 @CompileStatic
 class DotenvExtension extends PluginExtensionPoint {
 
-    /** The default filename for the dotenv file. */
-    static final String DEFAULT_FILENAME = '.env'
-
     /** The configuration of this Nextflow session. */
-    private Map config
+    private DotenvConfig config
 
     /** The directory where the dotenv file is supposed to be located. */
     private Path directory
@@ -29,9 +26,9 @@ class DotenvExtension extends PluginExtensionPoint {
     /** Initializes the plugin once it is loaded and the session is ready. */
     @Override
     protected void init(Session session) {
-        this.config = session.config.navigate('dotenv', [:]) as Map
-        this.directory = session.baseDir.resolve(this.config.get('relative', '.'))
-        this.filename = config.get('filename', DEFAULT_FILENAME).toString()
+        config = new DotenvConfig(session.config.navigate('dotenv', [:]) as Map)
+        this.directory = session.baseDir.resolve(config.relative ?: DotenvConfig.DEFAULT_RELATIVE)
+        this.filename = (config.filename ?: DotenvConfig.DEFAULT_FILENAME).toString()
     }
 
     /** The dotenv environment for this Nextflow session. Marked as lazy to only raise exceptions at call time. */
@@ -45,7 +42,7 @@ class DotenvExtension extends PluginExtensionPoint {
             throw new DotenvException(
                 "Could not find dotenv file at path ${this.directory}/${this.filename}\n\n" +
                 "Consider modifying the following properties in your Nextflow config:\n\n" +
-                "\tdotenv.filename = '${DEFAULT_FILENAME}'\n" +
+                "\tdotenv.filename = '${DotenvConfig.DEFAULT_FILENAME}'\n" +
                 "\tdotenv.relative = '.'\n\n" +
                 "Original `dotenv` parsing error: ${originalException.message}"
             )
