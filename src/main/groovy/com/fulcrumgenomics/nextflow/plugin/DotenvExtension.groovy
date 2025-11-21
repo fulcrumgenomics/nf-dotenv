@@ -7,6 +7,7 @@ import io.github.cdimascio.dotenv.DotenvException
 import nextflow.Session
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
+import nextflow.script.dsl.Description
 
 import java.nio.file.Path
 
@@ -51,6 +52,7 @@ class DotenvExtension extends PluginExtensionPoint {
 
     /** Return a value in the dotenv environment, or raise an exception if the key is missing. */
     @Function
+    @Description('Returns the value of the specified key from the dotenv file.')
     String dotenv(String key) {
         def value = this.dotenv.get(key)
         if (value == null) {
